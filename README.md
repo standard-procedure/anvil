@@ -18,19 +18,19 @@ Coming soon (plan is to use [Fog](https://github.com/fog/fog) to handle building
 
 Move to your application's root folder and create the anvil.yml file (see below).
 
-Then run `anvil user@host --use-sudo --identity=~/.ssh/my_key`.
+Then run `anvil host --user=user --use-sudo --identity=~/.ssh/my_key`.
 
 This will SSH into each server and:
 
-- Set the server hostname and timezone
-- Install various necessary packages, plus dokku itself
-- Set up the firewall
-- Create unix users for each app, adding them to the sudo and docker groups, and setting their authorized_keys files with the given public key
-- Disallow root and passwordless logins over SSH
+- Sets the server hostname and timezone
+- Installs various necessary packages, plus dokku itself
+- Sets up the firewall
+- Creates unix users for each app, adding them to the sudo and docker groups, and setting their authorized_keys files with the given public key
 - Schedule a `docker system prune` once per week to clean up any dangling images or containers
 - Configure nginx
 - Install dokku plugins and run any configuration you have defined
-- Sets the deployment branch to `main`
+- Sets the dokku deployment branch to `main`
+- Disallows root and passwordless logins over SSH
 
 For each app it will then:
 
@@ -121,7 +121,6 @@ apps:
         letsencrypt:
           - set second_app email ssl-admin@mycompany.com
           - enable second_app
-
 ```
 `secrets.yml` is an optional additional file containing environment variables that you do not want to check into your source code repository.  It is a simple KEY=VALUE format:
 

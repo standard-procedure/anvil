@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-require_relative "lib/standard/procedure/anvil/version"
+require_relative "lib/anvil/version"
 
 Gem::Specification.new do |spec|
-  spec.name = "standard-procedure-anvil"
-  spec.version = Standard::Procedure::Anvil::VERSION
+  spec.name = "anvil"
+  spec.version = Anvil::VERSION
   spec.authors = ["Rahoul Baruah"]
   spec.email = ["rahoulb@standardprocedure.app"]
 
@@ -28,12 +28,13 @@ Gem::Specification.new do |spec|
         f.start_with?(*%w[bin/ test/ spec/ features/ .git .circleci appveyor Gemfile])
     end
   end
-  spec.bindir = "bin"
-  spec.executables = spec.files.grep(%r{\bin/}) { |f| File.basename(f) }
+  spec.bindir = "exe"
+  spec.executables = spec.files.grep(%r{\exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
   spec.add_dependency "thor"
   spec.add_dependency "ed25519"
   spec.add_dependency "bcrypt_pbkdf"
   spec.add_dependency "net-ssh"
+  # spec.add_dependency "standard-procedure-async"
 end

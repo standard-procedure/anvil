@@ -1,0 +1,63 @@
+version: 0.1
+hosts:
+  - server1.example.com
+  - server2.example.com
+server_config:
+  user: user
+  port: 22
+  use_sudo: true
+  public_key: spec/fixtures/fake-key.pub
+  timezone: Europe/London
+  ports:
+    - 22/tcp
+    - 80/tcp
+    - 443/tcp
+  plugins:
+    cron-restart:
+      url: https://github.com/dokku/dokku-cron-restart.git
+    letsencrypt:
+      url: https://github.com/dokku/dokku-letsencrypt.git
+      config:
+        - set --global email ssl-admin@mycompany.com
+        - cronjob --add
+apps:
+  first_app:
+    hostname: first_app.example.com
+    port: 3000
+    environment:
+      - ENV_VAR=value
+      - ENV_VAR2=value2
+      - RAILS_ENV=production
+    secrets: secrets.yml
+    resource_limit: 2048m
+    scale: web=2 worker=1
+    nginx:
+      forward_proxy_headers: false
+      client_max_body_size: 512m
+      proxy_read_timeout: 60s
+    plugins:
+        cron-restart:
+          - set first_app schedule '0 3 * * *'
+        letsencrypt:
+          - set first_app email ssl-admin@mycompany.com
+          - enable first_app
+  second_app:
+    hostname: second_app.example.com
+    port: 3000
+    environment:
+      - ENV_VAR=value
+      - ENV_VAR2=value2
+      - RAILS_ENV=production
+    secrets: secrets.yml
+    resource_limit: 2048m
+    scale: web=2 worker=1
+    nginx:
+      forward_proxy_headers: false
+      client_max_body_size: 512m
+      proxy_read_timeout: 60s
+    plugins:
+        cron-restart:
+          - set second_app schedule '0 3 * * *'
+        letsencrypt:
+          - set second_app email ssl-admin@mycompany.com
+          - enable second_app
