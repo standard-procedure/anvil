@@ -13,7 +13,8 @@ require_relative "logger"
 # - Configure nginx
 # - Install dokku plugins and run any configuration you have defined
 # - Disallows root and passwordless logins over SSH
-class Anvil::ServerInstaller < Struct.new(:hostname, :configuration, :private_key, :passphrase)
+# You can specify a custom logger or SSH executor using the options hash.
+class Anvil::ServerInstaller < Struct.new(:hostname, :configuration, :private_key, :passphrase, :options)
   require_relative "server_installer/set_hostname"
   require_relative "server_installer/set_timezone"
   require_relative "server_installer/install_packages"
@@ -23,8 +24,9 @@ class Anvil::ServerInstaller < Struct.new(:hostname, :configuration, :private_ke
   require_relative "server_installer/install_plugins"
   require_relative "server_installer/configure_firewall"
   require_relative "server_installer/configure_ssh_server"
+
   def call
-    Anvil::SshExecutor.new(hostname, server_configuration["install_user"], logger).call do |ssh_connection|
+    ssh_executor.call do |ssh_connection|
       logger.info "SetHostname"
       Anvil::ServerInstaller::SetHostname.new(ssh_connection, hostname).call
       logger.info "SetTimezone"
@@ -50,7 +52,15 @@ class Anvil::ServerInstaller < Struct.new(:hostname, :configuration, :private_ke
     configuration["server"]
   end
 
+  def options
+    super || {}
+  end
+
   def logger
-    Anvil::Logger.new(hostname)
+    options[:logger].nil? ? Anvil::Logger.new(hostname) : options[:logger]
+  end
+
+  def ssh_executor
+    options[:ssh_executor].nil? ? Anvil::SshExecutor.new(hostname, server_configuration["install_user"], server_configuration["use_sudo"], logger) : options[:ssh_executor]
   end
 end
