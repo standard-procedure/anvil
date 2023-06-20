@@ -5,6 +5,6 @@ class Anvil::ServerInstaller::SetTimezone < Struct.new(:ssh_connection, :timezon
     script = <<-SCRIPT
     timedatectl set-timezone #{timezone}
     SCRIPT
-    ssh_connection.exec! script
+    ssh_connection.exec! script, "SetTimezone"
   end
 end

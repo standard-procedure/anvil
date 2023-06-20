@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
 
-require "anvil"
+require_relative "../lib/anvil"
 
 Anvil::Cli.start(ARGV)

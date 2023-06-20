@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
-require "net/ssh"
+require_relative "ssh_executor"
+require_relative "logger"
 
 # The server installer uses Net::SSH to connect to the server and then run the following steps:
 # - Sets the server hostname and timezone
@@ -12,7 +13,7 @@ require "net/ssh"
 # - Configure nginx
 # - Install dokku plugins and run any configuration you have defined
 # - Disallows root and passwordless logins over SSH
-class Anvil::ServerInstaller < Struct.new(:hostname, :configuration, :key_cert)
+class Anvil::ServerInstaller < Struct.new(:hostname, :configuration, :private_key, :passphrase)
   require_relative "server_installer/set_hostname"
   require_relative "server_installer/set_timezone"
   require_relative "server_installer/install_packages"
@@ -23,16 +24,25 @@ class Anvil::ServerInstaller < Struct.new(:hostname, :configuration, :key_cert)
   require_relative "server_installer/configure_firewall"
   require_relative "server_installer/configure_ssh_server"
   def call
-    Net::SSH.start hostname, server_configuration["user"], key_certs: [key_cert] do |ssh_connection|
-      write Anvil::ServerInstaller::SetHostname.new(ssh_connection, hostname).call
-      write Anvil::ServerInstaller::SetTimezone.new(ssh_connection, server_configuration["timezone"]).call
-      write Anvil::ServerInstaller::InstallPackages.new(ssh_connection, server_configuration["public_key"]).call
-      write Anvil::ServerInstaller::ConfigureDokku.new(ssh_connection, hostname).call
-      write Anvil::ServerInstaller::CreateUsers.new(ssh_connection, app_names).call
-      write Anvil::ServerInstaller::InstallPlugins.new(ssh_connection, server_configuration["plugins"]).call
-      write Anvil::ServerInstaller::ConfigureDocker.new(ssh_connection).call
-      write Anvil::ServerInstaller::ConfigureFirewall.new(ssh_connection, server_configuration["ports"]).call
-      write Anvil::ServerInstaller::ConfigureSshServer.new(ssh_connection).call
+    Anvil::SshExecutor.new(hostname, server_configuration["user"], logger).call do |ssh_connection|
+      logger.info "SetHostname"
+      Anvil::ServerInstaller::SetHostname.new(ssh_connection, hostname).call
+      logger.info "SetTimezone"
+      Anvil::ServerInstaller::SetTimezone.new(ssh_connection, server_configuration["timezone"]).call
+      logger.info "InstallPackages"
+      Anvil::ServerInstaller::InstallPackages.new(ssh_connection, server_configuration["public_key"]).call
+      logger.info "ConfigureDokku"
+      Anvil::ServerInstaller::ConfigureDokku.new(ssh_connection, hostname).call
+      logger.info "CreateUsers"
+      Anvil::ServerInstaller::CreateUsers.new(ssh_connection, app_names).call
+      logger.info "InstallPlugins"
+      Anvil::ServerInstaller::InstallPlugins.new(ssh_connection, server_configuration["plugins"]).call
+      logger.info "ConfigureDocker"
+      Anvil::ServerInstaller::ConfigureDocker.new(ssh_connection).call
+      logger.info "ConfigureFirewall"
+      Anvil::ServerInstaller::ConfigureFirewall.new(ssh_connection, server_configuration["ports"]).call
+      logger.info "ConfigureSshServer"
+      Anvil::ServerInstaller::ConfigureSshServer.new(ssh_connection).call
     end
   end
 
@@ -44,11 +54,7 @@ class Anvil::ServerInstaller < Struct.new(:hostname, :configuration, :key_cert)
     configuration["apps"].keys
   end
 
-  def write message
-    puts "#{timestamp} #{message}"
-  end
-
-  def timestamp
-    "#{Time.now.strftime("%H:%M:%S")} #{hostname}:".rjust(40)
+  def logger
+    Anvil::Logger.new(hostname)
   end
 end

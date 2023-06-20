@@ -5,6 +5,6 @@ class Anvil::ServerInstaller::ConfigureDocker < Struct.new(:ssh_connection)
     script = <<~SCRIPT
       echo "15 0 3 * * /usr/bin/docker system prune -f" | crontab
     SCRIPT
-    ssh_connection.exec! script
+    ssh_connection.exec! script, "ConfigureDocker"
   end
 end

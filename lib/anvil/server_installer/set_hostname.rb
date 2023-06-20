@@ -7,6 +7,6 @@ class Anvil::ServerInstaller::SetHostname < Struct.new(:ssh_connection, :hostnam
       mkdir -p /etc/environment.d
       echo "HOSTNAME=#{hostname}" > /etc/environment.d/99-hostname
     SCRIPT
-    ssh_connection.exec! script
+    ssh_connection.exec! script, "SetHostname"
   end
 end

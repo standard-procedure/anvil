@@ -2,11 +2,12 @@
 
 require_relative "../../lib/anvil/server_installer"
 RSpec.describe Anvil::ServerInstaller do
-  subject { Anvil::ServerInstaller.new(host, configuration, key_cert) }
+  subject { Anvil::ServerInstaller.new(host, configuration, private_key, passphrase) }
 
   let(:host) { "server1.example.com" }
   let(:configuration) { YAML.load_file("spec/fixtures/configuration.yml") }
-  let(:key_cert) { "spec/fixtures/private_key" }
+  let(:private_key) { "spec/fixtures/private_key" }
+  let(:passphrase) { "secret" }
   let(:ssh_connection) { double "net/ssh" }
   let(:plugins_config) do
     {
@@ -16,7 +17,7 @@ RSpec.describe Anvil::ServerInstaller do
   end
 
   it "runs the installation scripts in order" do
-    expect(Net::SSH).to receive(:start).with(host, "user", key_certs: [key_cert]).and_yield(ssh_connection)
+    expect(Net::SSH).to receive(:start).with(host, "user", keys: [private_key], passphrase: passphrase).and_yield(ssh_connection)
     expect(Anvil::ServerInstaller::SetHostname).to receive(:new).with(ssh_connection, "server1.example.com").and_return(double(call: true))
     expect(Anvil::ServerInstaller::SetTimezone).to receive(:new).with(ssh_connection, "Europe/London").and_return(double(call: true))
     expect(Anvil::ServerInstaller::InstallPackages).to receive(:new).with(ssh_connection, "spec/fixtures/fake-key.pub").and_return(double(call: true))

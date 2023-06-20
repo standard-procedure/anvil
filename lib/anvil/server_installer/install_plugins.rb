@@ -4,10 +4,11 @@ class Anvil::ServerInstaller::InstallPlugins < Struct.new(:ssh_connection, :plug
   def call
     plugins.each do |name, config|
       scripts = ["dokku plugin:install #{config["url"]} #{name}"]
-      scripts += config.collect do |cmd|
+      plugin_config = config["config"] || []
+      scripts += plugin_config.collect do |cmd|
         "dokku #{name}:#{cmd}"
       end
-      ssh_connection.exec! scripts.join("\n")
+      ssh_connection.exec! scripts.join("\n"), "InstallPlugins"
     end
   end
 end
