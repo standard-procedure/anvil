@@ -23,6 +23,10 @@ class Anvil::Cli < Thor
     Anvil::Installer.new(configuration_from(config), private_key, passphrase).call
   end
 
+  def self.exit_on_failure?
+    true
+  end
+
   protected
 
   def configuration_from(file_name)
