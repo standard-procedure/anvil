@@ -22,12 +22,12 @@ RSpec.describe Anvil::ServerInstaller do
     ssh_executor = double "Anvil::SshExecutor", exec!: true
     allow(ssh_executor).to receive(:call).and_yield(ssh_executor)
 
-    expect(Anvil::SshExecutor).to receive(:new).with(host, "user", logger).and_return(ssh_executor)
+    expect(Anvil::SshExecutor).to receive(:new).with(host, "root", logger).and_return(ssh_executor)
 
     expect(Anvil::ServerInstaller::SetHostname).to receive(:new).with(ssh_executor, "server1.example.com").and_return(double(call: true))
     expect(Anvil::ServerInstaller::SetTimezone).to receive(:new).with(ssh_executor, "Europe/London").and_return(double(call: true))
     expect(Anvil::ServerInstaller::InstallPackages).to receive(:new).with(ssh_executor, "spec/fixtures/fake-key.pub").and_return(double(call: true))
-    expect(Anvil::ServerInstaller::CreateUsers).to receive(:new).with(ssh_executor, ["first_app", "second_app"]).and_return(double(call: true))
+    expect(Anvil::ServerInstaller::CreateUser).to receive(:new).with(ssh_executor, "user").and_return(double(call: true))
     expect(Anvil::ServerInstaller::ConfigureDokku).to receive(:new).with(ssh_executor, "server1.example.com").and_return(double(call: true))
     expect(Anvil::ServerInstaller::ConfigureDocker).to receive(:new).with(ssh_executor).and_return(double(call: true))
     expect(Anvil::ServerInstaller::InstallPlugins).to receive(:new).with(ssh_executor, plugins_config).and_return(double(call: true))

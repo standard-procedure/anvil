@@ -17,14 +17,14 @@ class Anvil::ServerInstaller < Struct.new(:hostname, :configuration, :private_ke
   require_relative "server_installer/set_hostname"
   require_relative "server_installer/set_timezone"
   require_relative "server_installer/install_packages"
-  require_relative "server_installer/create_users"
+  require_relative "server_installer/create_user"
   require_relative "server_installer/configure_dokku"
   require_relative "server_installer/configure_docker"
   require_relative "server_installer/install_plugins"
   require_relative "server_installer/configure_firewall"
   require_relative "server_installer/configure_ssh_server"
   def call
-    Anvil::SshExecutor.new(hostname, server_configuration["user"], logger).call do |ssh_connection|
+    Anvil::SshExecutor.new(hostname, server_configuration["install_user"], logger).call do |ssh_connection|
       logger.info "SetHostname"
       Anvil::ServerInstaller::SetHostname.new(ssh_connection, hostname).call
       logger.info "SetTimezone"
@@ -34,7 +34,7 @@ class Anvil::ServerInstaller < Struct.new(:hostname, :configuration, :private_ke
       logger.info "ConfigureDokku"
       Anvil::ServerInstaller::ConfigureDokku.new(ssh_connection, hostname).call
       logger.info "CreateUsers"
-      Anvil::ServerInstaller::CreateUsers.new(ssh_connection, app_names).call
+      Anvil::ServerInstaller::CreateUser.new(ssh_connection, server_configuration["app_user"]).call
       logger.info "InstallPlugins"
       Anvil::ServerInstaller::InstallPlugins.new(ssh_connection, server_configuration["plugins"]).call
       logger.info "ConfigureDocker"
@@ -47,11 +47,7 @@ class Anvil::ServerInstaller < Struct.new(:hostname, :configuration, :private_ke
   end
 
   def server_configuration
-    configuration["server_config"]
-  end
-
-  def app_names
-    configuration["apps"].keys
+    configuration["server"]
   end
 
   def logger
