@@ -3,7 +3,7 @@
 require_relative "lib/anvil/version"
 
 Gem::Specification.new do |spec|
-  spec.name = "anvil"
+  spec.name = "standard-procedure-anvil"
   spec.version = Anvil::VERSION
   spec.authors = ["Rahoul Baruah"]
   spec.email = ["rahoulb@standardprocedure.app"]
