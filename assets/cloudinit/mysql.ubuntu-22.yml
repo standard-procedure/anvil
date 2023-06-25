@@ -1,0 +1,56 @@
+#cloud-config
+users:
+  - name: %{USER}
+    groups: users, admin
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - %{PUBLIC_KEY}
+packages:
+  - fail2ban
+  - mysql-client
+  - libmysqlclient-dev
+  - ufw
+package_update: true
+package_upgrade: true
+runcmd:
+  # Install MySQL
+  - echo "mysql-server mysql-server/root_password password root" | sudo debconf-set-selections
+  - echo "mysql-server mysql-server/root_password_again password root" | sudo debconf-set-selections
+  - sudo apt-get -y install mysql-server
+  - |
+    cat >> /etc/mysql/mysql.conf.d/utf8.cnf << CONF
+    [client]
+    default-character-set=utf8mb4
+
+    [mysql]
+    default-character-set=utf8mb4
+
+    [mysqld]
+    init_connect='SET collation_connection = utf8mb4_unicode_ci'
+    init_connect='SET NAMES utf8mb4'
+    character-set-server=utf8mb4
+    collation-server=utf8mb4_unicode_ci
+    skip-character-set-client-handshake
+    CONF
+  - sed -i -e '/^\(#\|\)bind-address/s/^.*$/bind-address = 0.0.0.0/' /etc/mysql/mysql.conf.d/mysqld.cnf
+  # Setup fail2ban
+  - printf "[sshd]\nenabled = true\nbanaction = iptables-multiport" > /etc/fail2ban/jail.local
+  - systemctl enable fail2ban
+  # Start MySQL
+  - systemctl start mysql.service
+  # Setup ufw
+  - ufw allow 22/tcp
+  - ufw allow 3306/tcp
+  - ufw enable
+  # Harden SSH
+  - sed -i -e '/^\(#\|\)PermitRootLogin/s/^.*$/PermitRootLogin no/' /etc/ssh/sshd_config
+  - sed -i -e '/^\(#\|\)PasswordAuthentication/s/^.*$/PasswordAuthentication no/' /etc/ssh/sshd_config
+  - sed -i -e '/^\(#\|\)X11Forwarding/s/^.*$/X11Forwarding no/' /etc/ssh/sshd_config
+  - sed -i -e '/^\(#\|\)MaxAuthTries/s/^.*$/MaxAuthTries 2/' /etc/ssh/sshd_config
+  - sed -i -e '/^\(#\|\)AllowTcpForwarding/s/^.*$/AllowTcpForwarding no/' /etc/ssh/sshd_config
+  - sed -i -e '/^\(#\|\)AllowAgentForwarding/s/^.*$/AllowAgentForwarding no/' /etc/ssh/sshd_config
+  - sed -i -e '/^\(#\|\)AuthorizedKeysFile/s/^.*$/AuthorizedKeysFile .ssh\/authorized_keys/' /etc/ssh/sshd_config
+  - sed -i '$a AllowUsers db' /etc/ssh/sshd_config
+  # BOOM
+  - reboot

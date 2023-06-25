@@ -1,26 +1,9 @@
 version: 0.1
 hosts:
-  - server1.example.com
-  - server2.example.com
-server:
-  install_user: root
-  port: 22
-  use_sudo: false
-  public_key: spec/fixtures/fake-key.pub
-  timezone: Europe/London
-  ports:
-    - 22/tcp
-    - 80/tcp
-    - 443/tcp
-  app_user: user
-  plugins:
-    cron-restart:
-      url: https://github.com/dokku/dokku-cron-restart.git
-    letsencrypt:
-      url: https://github.com/dokku/dokku-letsencrypt.git
-      config:
-        - set --global email ssl-admin@mycompany.com
-        - cronjob --add
+  server1.example.com:
+    env:
+      - PRIMARY=true
+  server2.example.com:
 app:
   hostname: first_app.example.com
   port: 3000
@@ -35,9 +18,12 @@ app:
     forward_proxy_headers: false
     client_max_body_size: 512m
     proxy_read_timeout: 60s
-  plugins:
-      cron-restart:
-        - set first_app schedule '0 3 * * *'
-      letsencrypt:
-        - set first_app email ssl-admin@mycompany.com
-        - enable first_app
+  scripts:
+    after_intall:
+      all:
+        - dokku cron-restart:set first_app schedule '0 3 * * *'
+        - dokku letsencrypt:set first_app email ssl-admin@mycompany.com
+        - dokku letsencrypt:enable first_app
+    after_deploy:
+      primary:
+        - dokku run first_app bin/rails db:migrate
