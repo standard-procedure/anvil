@@ -1,0 +1,90 @@
+#cloud-config
+users:
+  - name: %{USER}
+    groups: users, admin, docker
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - %{PUBLIC_KEY}
+packages:
+  - fail2ban
+  - ufw
+  - wget
+  - docker.io
+  - docker-compose
+  - apt-transport-https
+package_update: true
+package_upgrade: true
+runcmd:
+  # General server setup
+  - timedatectl set-timezone UTC
+  # Prepare for OpenSearch
+  - swapoff -a
+  - echo "vm.max_map_count=262144" > /etc/sysctl.d/98-opensearch.conf
+  - sysctl -p /etc/sysctl.d/98-opensearch.conf
+  # Fail2Ban setup
+  - printf "[sshd]\nenabled = true\nbanaction = iptables-multiport" > /etc/fail2ban/jail.local
+  - systemctl enable fail2ban
+  # UFW and SSH setup
+  - ufw allow 22/tcp
+  - ufw allow 9200/tcp
+  - ufw allow 9600/tcp
+  - ufw enable
+  # Harden SSH
+  - sed -i -e '/^\(#\|\)PermitRootLogin/s/^.*$/PermitRootLogin no/' /etc/ssh/sshd_config
+  - sed -i -e '/^\(#\|\)PasswordAuthentication/s/^.*$/PasswordAuthentication no/' /etc/ssh/sshd_config
+  - sed -i -e '/^\(#\|\)X11Forwarding/s/^.*$/X11Forwarding no/' /etc/ssh/sshd_config
+  - sed -i -e '/^\(#\|\)MaxAuthTries/s/^.*$/MaxAuthTries 2/' /etc/ssh/sshd_config
+  - sed -i -e '/^\(#\|\)AllowTcpForwarding/s/^.*$/AllowTcpForwarding no/' /etc/ssh/sshd_config
+  - sed -i -e '/^\(#\|\)AllowAgentForwarding/s/^.*$/AllowAgentForwarding no/' /etc/ssh/sshd_config
+  - sed -i -e '/^\(#\|\)AuthorizedKeysFile/s/^.*$/AuthorizedKeysFile .ssh\/authorized_keys/' /etc/ssh/sshd_config
+  - sed -i '$a AllowUsers %{USER}' /etc/ssh/sshd_config
+  # OpenSearch setup
+  - mkdir -p /etc/opensearch
+  - docker pull opensearchproject/opensearch:latest
+  - docker pull opensearchproject/opensearch-dashboards:latest
+  - |
+    cat >> /etc/opensearch/docker-compose.yml << EOF
+    version: '3'
+    services:
+      search_db:
+        image: opensearchproject/opensearch:latest
+        container_name: search_db
+        environment:
+          - discovery.type=single-node
+          - node.name=search_db
+          - bootstrap.memory_lock=true
+          - plugins.security.disabled=true
+          - "OPENSEARCH_JAVA_OPTS=-Xms4096m -Xmx4096m"
+        ulimits:
+          memlock:
+            soft: -1
+            hard: -1
+          nofile:
+            soft: 65536
+            hard: 65536
+        volumes:
+          - opensearch_data:/usr/share/opensearch/data
+        ports:
+          - 9200:9200
+          - 9600:9600
+    volumes:
+      opensearch_data:
+    EOF
+  - |
+    cat >> /etc/systemd/system/opensearch.service << EOF
+    Description=OpenSearch container
+    Requires=docker.service
+    After=docker.service
+    [Service]
+    WorkingDirectory=/etc/opensearch
+    Restart=always
+    ExecStart=/usr/bin/docker-compose up
+    ExecStop=/usr/bin/docker-compose down
+    [Install]
+    WantedBy=multi-user.target
+    EOF
+  - systemctl daemon-reload
+  - systemctl enable opensearch.service
+  - service opensearch start
+  - reboot

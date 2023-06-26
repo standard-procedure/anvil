@@ -10,7 +10,8 @@ packages:
   - fail2ban
   - ufw
   - wget
-  - apt-transport-https
+  - memcached
+  - logrotate
 package_update: true
 package_upgrade: true
 runcmd:
@@ -21,8 +22,7 @@ runcmd:
   - systemctl enable fail2ban
   # UFW and SSH setup
   - ufw allow 22/tcp
-  - ufw allow 80/tcp
-  - ufw allow 443/tcp
+  - ufw allow 11211/tcp
   - ufw enable
   # Harden SSH
   - sed -i -e '/^\(#\|\)PermitRootLogin/s/^.*$/PermitRootLogin no/' /etc/ssh/sshd_config
@@ -32,17 +32,19 @@ runcmd:
   - sed -i -e '/^\(#\|\)AllowTcpForwarding/s/^.*$/AllowTcpForwarding no/' /etc/ssh/sshd_config
   - sed -i -e '/^\(#\|\)AllowAgentForwarding/s/^.*$/AllowAgentForwarding no/' /etc/ssh/sshd_config
   - sed -i -e '/^\(#\|\)AuthorizedKeysFile/s/^.*$/AuthorizedKeysFile .ssh\/authorized_keys/' /etc/ssh/sshd_config
-  - sed -i '$a AllowUsers %{USER} dokku' /etc/ssh/sshd_config
-  # Dokku setup
-  - echo "dokku dokku/vhost_enable boolean true" | sudo debconf-set-selections
-  - wget https://dokku.com/install/v0.30.7/bootstrap.sh && sudo DOKKU_TAG=v0.30.7 bash bootstrap.sh
-  - cat /home/%{USER}/.ssh/authorized_keys | dokku ssh-keys:add admin
-  - dokku plugin:install https://github.com/dokku/dokku-cron-restart.git cron-restart
-  - dokku plugin:install https://github.com/dokku/dokku-maintenance.git maintenance
-  - dokku plugin:install https://github.com/dokku/dokku-redis.git redis
-  - dokku plugin:install https://github.com/dokku/dokku-mariadb.git mariadb
-  - dokku plugin:install https://github.com/dokku/dokku-memcached.git memcached
-  - dokku plugin:install https://github.com/dokku/dokku-letsencrypt.git letsencrypt
-  - dokku config:set --global DOKKU_LETSENCRYPT_EMAIL=sysadmin@echodek.co
-  - dokku git:set --global deploy-branch main
+  - sed -i '$a AllowUsers %{USER}' /etc/ssh/sshd_config
+  # Set up memcached
+  - sed -i 's/-m 64/-m 512/g' /etc/memcached.conf
+  - sed -i 's/-l 127.0.0.1/-l 0.0.0.0/g' /etc/memcached.conf
+  - systemctl restart memcached.service
+  - |
+    cat > /etc/logrotate.d/memcached << EOF
+    /var/log/redis/memcached*.log {
+      daily
+      missingok
+      rotate 7
+      compress
+      notifempty
+    }
+    EOF
   - reboot
