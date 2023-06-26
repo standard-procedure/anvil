@@ -14,6 +14,8 @@ module Anvil
     Example:
       anvil app env /path/to/config
 
+      If the /path/to/config is not supplied, it defaults to deploy.yml
+
       Options:
 
       --host, -h: The server that the environment variables should be generated for - only required if multiple servers are configured
@@ -25,7 +27,7 @@ module Anvil
     option :host, type: :string, default: nil, aliases: "-h"
     option :secrets, type: :string, default: nil, aliases: "-s"
     option :secrets_stdin, type: :boolean, default: false, aliases: "-S"
-    def env filename
+    def env filename = "deploy.yml"
       configuration = YAML.load_file(filename)
       secrets = if !options[:secrets].nil?
         File.read(options[:secrets])
