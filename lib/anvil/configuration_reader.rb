@@ -12,13 +12,25 @@ module Anvil
       raise ArgumentError.new("Host #{hostname} is not in the configuration hosts list") unless hosts.include? hostname
     end
 
+    def configuration_for_app
+      configuration["app"]
+    end
+
     def environment_for_app
-      configuration["app"]["environment"]
+      configuration_for_app.fetch "environment", []
+    end
+
+    def configuration_for hostname
+      host_config = configuration["hosts"].find { |host_data| host_data.key?(hostname) ? host_data[hostname] : nil }
+      host_config&.fetch(hostname)
     end
 
     def environment_for hostname
-      host_config = configuration["hosts"].find { |host_data| host_data.key?(hostname) ? host_data[hostname] : nil }
-      (host_config.nil? || host_config[hostname].nil?) ? nil : host_config[hostname]["env"]
+      configuration_for(hostname)&.fetch "environment", []
+    end
+
+    def user_for hostname
+      configuration_for(hostname)&.fetch "user", nil
     end
   end
 end

@@ -9,7 +9,7 @@ module Anvil
       def call
         self.host ||= hosts.first
         validate host
-        [env_vars_for(host), env_vars_for_app, secrets].compact.join(" ")
+        [env_vars_for(host), env_vars_for_app, secrets].compact.join(" ").strip
       end
 
       protected
@@ -23,7 +23,7 @@ module Anvil
       end
 
       def generate_from variables
-        variables&.join(" ")
+        variables&.join(" ")&.strip
       end
     end
   end

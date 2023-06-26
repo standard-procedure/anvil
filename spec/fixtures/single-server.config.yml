@@ -1,8 +1,12 @@
 version: 0.1
 hosts:
   - server1.example.com:
+      user: app_user
+      scripts:
+        post_deploy:
+          - dokku run app bin/rails db:migrate
 app:
-  hostname: first_app.example.com
+  domain: my_app.example.com
   port: 3000
   environment:
     - ENV_VAR=value
@@ -15,11 +19,7 @@ app:
     client_max_body_size: 512m
     proxy_read_timeout: 60s
   scripts:
-    after_intall:
-      all:
-        - dokku cron-restart:set first_app schedule '0 3 * * *'
-        - dokku letsencrypt:set first_app email ssl-admin@mycompany.com
-        - dokku letsencrypt:enable first_app
-    after_deploy:
-      primary:
-        - dokku run first_app bin/rails db:migrate
+    post_install:
+      - dokku cron-restart:set app schedule '0 3 * * *'
+      - dokku letsencrypt:set app email ssl-admin@mycompany.com
+      - dokku letsencrypt:enable app
