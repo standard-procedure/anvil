@@ -5,9 +5,14 @@ RSpec.describe Anvil::App::Env do
   context "when the configuration file lists a single server" do
     context "with settings for the app" do
       let(:configuration) { YAML.load_file(File.dirname(__FILE__) + "/../../fixtures/single-server.config.yml") }
-      subject { Anvil::App::Env.new(configuration, "server1.example.com") }
 
       it "generates environment variables for the app" do
+        subject = Anvil::App::Env.new(configuration, "server1.example.com")
+        expect(subject.call).to eq "ENV_VAR=value ENV_VAR2=value2 RAILS_ENV=production"
+      end
+
+      it "uses the first server if no host is specified" do
+        subject = Anvil::App::Env.new(configuration)
         expect(subject.call).to eq "ENV_VAR=value ENV_VAR2=value2 RAILS_ENV=production"
       end
     end

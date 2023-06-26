@@ -4,6 +4,7 @@ module Anvil
   class App
     class Env < Struct.new(:configuration, :host, :secrets)
       def call
+        self.host ||= hosts.first
         validate_hosts
         [env_vars_for(host), env_vars_for_app, secrets].compact.join(" ")
       end

@@ -9,20 +9,30 @@ module Anvil
 
     desc "env", "Generate environment variables for an app"
     long_desc <<-DESC
-    Generate environment variables for an app
+    List the environment variables for an app (on a given host)
 
     Example:
-      anvil app env /path/to/config --host server1.example.com --user app_user
+      anvil app env /path/to/config
 
       Options:
+
       --host, -h: The server that the environment variables should be generated for - only required if multiple servers are configured
-      --user, -u: The user to SSH in to each host as - defaults to app. This also requires that your SSH agent is initialised and can handle authentication with the server
+
+      --secrets, -s: The path to a file containing secrets to be injected into the environment variables
+
+      --secrets-stdin, -S: Read secrets from STDIN instead of a file
     DESC
     option :host, type: :string, default: nil, aliases: "-h"
-    option :user, type: :string, default: "app", aliases: "-u"
+    option :secrets, type: :string, default: nil, aliases: "-s"
+    option :secrets_stdin, type: :boolean, default: false, aliases: "-S"
     def env filename
       configuration = YAML.load_file(filename)
-      Anvil::App::Env.new(configuration, options[:host]).call
+      secrets = if !options[:secrets].nil?
+        File.read(options[:secrets])
+      elsif options[:secrets_stdin]
+        $stdin.read
+      end
+      puts Anvil::App::Env.new(configuration, options[:host], secrets).call
     end
   end
 end
