@@ -1,0 +1,30 @@
+version: 0.1
+hosts:
+  - server1.example.com:
+      user: app_user
+      environment:
+        - PRIMARY=true
+      scripts:
+        post_deploy:
+          - dokku run app bin/rails db:migrate
+  - server2.example.com:
+      user: app_user
+app:
+  domain: app.example.com
+  port: 3000
+  environment:
+    - ENV_VAR=value
+    - ENV_VAR2=value2
+    - RAILS_ENV=production
+  secrets: spec/fixtures/secrets.yml
+  resource_limit: 2048m
+  scale: web=2 worker=1
+  nginx:
+    forward_proxy_headers: true
+    client_max_body_size: 512m
+    proxy_read_timeout: 60s
+  scripts:
+    post_install:
+      - dokku cron-restart:set app schedule '0 3 * * *'
+      - dokku letsencrypt:set app email ssl-admin@mycompany.com
+      - dokku letsencrypt:enable app
