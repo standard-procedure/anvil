@@ -36,5 +36,5 @@ Gem::Specification.new do |spec|
   spec.add_dependency "ed25519"
   spec.add_dependency "bcrypt_pbkdf"
   spec.add_dependency "net-ssh"
-  # spec.add_dependency "standard-procedure-async"
+  spec.add_dependency "standard-procedure-async"
 end
