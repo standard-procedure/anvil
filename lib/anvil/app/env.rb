@@ -2,11 +2,10 @@
 
 module Anvil
   class App
-    class Env < Struct.new(:configuration, :host)
+    class Env < Struct.new(:configuration, :host, :secrets)
       def call
-        puts hosts.inspect
         validate_hosts
-        [primary_host_env_vars, app_env_vars, secret_env_vars].compact.join(" ")
+        [env_vars_for(host), env_vars_for_app, secrets].compact.join(" ")
       end
 
       protected
@@ -19,45 +18,25 @@ module Anvil
         raise ArgumentError.new("Host #{host} is not in the configuration hosts list") unless hosts.include? host
       end
 
-      def primary_host_env_vars
-        return nil unless primary_host?
+      def env_vars_for host
         generate_from environment_for(host)
       end
 
-      def app_env_vars
-        generate_from app_environment
-      end
-
-      def secret_env_vars
-        generate_from secrets
-      end
-
-      def primary_host?
-        host == hosts.first
+      def env_vars_for_app
+        generate_from environment_for_app
       end
 
       def generate_from variables
         variables&.join(" ")
       end
 
-      def secrets_file
-        configuration["app"]["secrets"]
-      end
-
-      def has_secrets?
-        !secrets_file.nil? && File.exist?(secrets_file)
-      end
-
-      def secrets
-        has_secrets? ? nil : YAML.load_file(secrets_file)["secrets"]
-      end
-
-      def app_environment
+      def environment_for_app
         configuration["app"]["environment"]
       end
 
       def environment_for hostname
-        configuration["hosts"].find { |host_data| host_data.key?(hostname) }&.[]"env"
+        host_config = configuration["hosts"].find { |host_data| host_data.key?(hostname) ? host_data[hostname] : nil }
+        (host_config.nil? || host_config[hostname].nil?) ? nil : host_config[hostname]["env"]
       end
     end
   end
