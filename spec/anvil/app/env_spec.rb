@@ -3,9 +3,10 @@
 require_relative "../../../lib/anvil/app/env"
 RSpec.describe Anvil::App::Env do
   context "when the configuration file lists a single server" do
-    context "with settings for the app" do
-      let(:configuration) { YAML.load_file(File.dirname(__FILE__) + "/../../fixtures/single-server.config.yml") }
+    let(:configuration) { YAML.load_file(File.dirname(__FILE__) + "/../../fixtures/single-server.config.yml") }
+    let(:secrets) { "FIRST_API_KEY=999999ABCDEF SECOND_API_KEY=ABCDEF999999" }
 
+    context "with settings for the app" do
       it "generates environment variables for the app" do
         subject = Anvil::App::Env.new(configuration, "server1.example.com")
         expect(subject.call).to eq "ENV_VAR=value ENV_VAR2=value2 RAILS_ENV=production"
@@ -15,14 +16,9 @@ RSpec.describe Anvil::App::Env do
         subject = Anvil::App::Env.new(configuration)
         expect(subject.call).to eq "ENV_VAR=value ENV_VAR2=value2 RAILS_ENV=production"
       end
-    end
 
-    context "with settings for the app and some secrets" do
-      let(:configuration) { YAML.load_file(File.dirname(__FILE__) + "/../../fixtures/single-server-with-secrets.config.yml") }
-      let(:secrets) { "FIRST_API_KEY=999999ABCDEF SECOND_API_KEY=ABCDEF999999" }
-      subject { Anvil::App::Env.new(configuration, "server1.example.com", secrets) }
-
-      it "generates environment variables including the secrets" do
+      it "includes any provided secrets" do
+        subject = Anvil::App::Env.new(configuration, "server1.example.com", secrets)
         expect(subject.call).to eq "ENV_VAR=value ENV_VAR2=value2 RAILS_ENV=production FIRST_API_KEY=999999ABCDEF SECOND_API_KEY=ABCDEF999999"
       end
     end
