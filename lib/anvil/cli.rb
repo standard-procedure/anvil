@@ -2,11 +2,15 @@
 
 require "thor"
 require_relative "cloudinit"
+require_relative "app"
 
 module Anvil
   class Cli < Thor
     desc "cloudinit", "Generate a cloudinit configuration"
     subcommand "cloudinit", Anvil::Cloudinit
+
+    desc "app", "Install or deploy a dokku app"
+    subcommand "app", Anvil::App
 
     desc "version", "Print the version of the anvil gem"
     def version

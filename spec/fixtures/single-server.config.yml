@@ -1,9 +1,6 @@
 version: 0.1
 hosts:
-  server1.example.com:
-    env:
-      - PRIMARY=true
-  server2.example.com:
+  - server1.example.com:
 app:
   hostname: first_app.example.com
   port: 3000
@@ -11,7 +8,6 @@ app:
     - ENV_VAR=value
     - ENV_VAR2=value2
     - RAILS_ENV=production
-  secrets: secrets.yml
   resource_limit: 2048m
   scale: web=2 worker=1
   nginx:
