@@ -14,6 +14,8 @@ packages:
 package_update: true
 package_upgrade: true
 runcmd:
+  # General server setup
+  - timedatectl set-timezone UTC
   # Install MySQL
   - echo "mysql-server mysql-server/root_password password root" | sudo debconf-set-selections
   - echo "mysql-server mysql-server/root_password_again password root" | sudo debconf-set-selections
@@ -51,6 +53,5 @@ runcmd:
   - sed -i -e '/^\(#\|\)AllowTcpForwarding/s/^.*$/AllowTcpForwarding no/' /etc/ssh/sshd_config
   - sed -i -e '/^\(#\|\)AllowAgentForwarding/s/^.*$/AllowAgentForwarding no/' /etc/ssh/sshd_config
   - sed -i -e '/^\(#\|\)AuthorizedKeysFile/s/^.*$/AuthorizedKeysFile .ssh\/authorized_keys/' /etc/ssh/sshd_config
-  - sed -i '$a AllowUsers db' /etc/ssh/sshd_config
-  # BOOM
+  - sed -i '$a AllowUsers %{USER}' /etc/ssh/sshd_config
   - reboot
