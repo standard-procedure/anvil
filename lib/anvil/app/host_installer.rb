@@ -5,11 +5,13 @@ module Anvil
   require_relative "../logger"
   require_relative "../ssh_executor"
   require_relative "env"
+  require_relative "../configuration_reader"
   class App
     class HostInstaller < Struct.new(:configuration, :host, :secrets)
       include StandardProcedure::Async::Actor
+      include Anvil::ConfigurationReader
 
-      async :call do
+      def call
         Anvil::SshExecutor.new(host, user_for(host), logger).call do |ssh|
           create_app ssh
           set_environment ssh

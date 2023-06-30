@@ -6,6 +6,7 @@ require "yaml"
 module Anvil
   class App < Anvil::SubCommandBase
     require_relative "app/env"
+    require_relative "app/install"
 
     desc "env /path/to/config.yml", "Generate environment variables for an app"
     long_desc <<-DESC
