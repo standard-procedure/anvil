@@ -32,8 +32,13 @@ module Anvil
         ssh.exec! "dokku docker-options:add app run \"--add-host=host.docker.internal:host-gateway\"", "set_dokku_options"
         ssh.exec! "dokku domains:set app #{configuration_for_app["domain"]}", "set_dokku_options"
         ssh.exec! "dokku proxy:ports-add app http:80:#{configuration_for_app["port"]}", "set_dokku_options"
-        ssh.exec! "dokku nginx:set app client-max-body-size 512m", "set_dokku_options"
-        ssh.exec! "dokku nginx:set app proxy-read-timeout 60s", "set_dokku_options"
+        ssh.exec! "dokku nginx:set app client-max-body-size #{configuration_for_app["nginx"]["client_max_body_size"]}", "set_dokku_options"
+        ssh.exec! "dokku nginx:set app proxy-read-timeout #{configuration_for_app["nginx"]["proxy_read_timeout"]}", "set_dokku_options"
+        if configuration_for_app["nginx"]["forward_proxy_headers"]
+          ssh.exec! "dokku nginx:set $APP x-forwarded-for-value \"$http_x_forwarded_for\"", "set_dokku_options"
+          ssh.exec! "dokku nginx:set $APP x-forwarded-port-value \"$http_x_forwarded_port\"", "set_dokku_options"
+          ssh.exec! "dokku nginx:set $APP x-forwarded-proto-value \"$http_x_forwarded_proto\"", "set_dokku_options"
+        end
         ssh.exec! "dokku proxy:build-config app", "set_dokku_options"
       end
 
