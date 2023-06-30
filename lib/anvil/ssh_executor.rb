@@ -10,7 +10,7 @@ require "net/ssh"
 module Anvil
   class SshExecutor < Struct.new(:hostname, :user, :logger)
     def call &block
-      @connection = Net::SSH.start hostname, user, use_agent: true
+      @connection = Net::SSH.start hostname, user, use_agent: true, verify_host_key: :accept_new
       block.call self
     end
 

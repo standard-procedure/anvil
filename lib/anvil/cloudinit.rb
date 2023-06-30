@@ -13,16 +13,13 @@ module Anvil
       end
     end
 
-    desc "generate", "Generate a cloudinit configuration"
+    desc "generate configuration", "Generate a cloudinit configuration"
     long_desc <<-DESC
     Generate a cloudinit configuration for a server
 
     Example:
       anvil cloudinit generate mysql.ubuntu-22 --user dbuser --public_key ~/.ssh/my_key.pub
 
-      Options:
-      --user, -u: The user to create on the server - defaults to app
-      --public_key, -k: The path to the public key file that will be installed for the user - default to ~/.ssh/id_rsa.pub
     DESC
     option :user, type: :string, default: "app", aliases: "-u"
     option :public_key, type: :string, default: "~/.ssh/id_rsa.pub", aliases: "-k"

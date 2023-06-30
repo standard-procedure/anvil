@@ -1,13 +1,17 @@
 # frozen_string_literal: true
 
 require "thor"
-require_relative "cloudinit"
-require_relative "app"
 
 module Anvil
+  require_relative "cloudinit"
+  require_relative "app"
+  require_relative "mysql"
   class Cli < Thor
     desc "cloudinit", "Generate a cloudinit configuration"
     subcommand "cloudinit", Anvil::Cloudinit
+
+    desc "mysql", "Manage mysql"
+    subcommand "mysql", Anvil::Mysql
 
     desc "app", "Install or deploy a dokku app"
     subcommand "app", Anvil::App
