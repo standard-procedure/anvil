@@ -16,7 +16,7 @@ module Anvil
           create_app ssh
           set_environment ssh
           set_dokku_options ssh
-          run_post_installation_scripts ssh
+          run_after_install_scripts ssh
         end
       end
 
@@ -44,12 +44,12 @@ module Anvil
         ssh.exec! "dokku proxy:build-config app", "set_dokku_options"
       end
 
-      def run_post_installation_scripts ssh
-        configuration_for_app.fetch("scripts")&.fetch("post_install")&.each do |script|
-          ssh.exec! script, "run_post_installation_scripts"
+      def run_after_install_scripts ssh
+        (configuration_for(host).fetch("scripts")&.fetch("after_install") || []).each do |script|
+          ssh.exec! script, "run_after_install_scripts"
         end
-        configuration_for(host).fetch("scripts")&.fetch("post_install")&.each do |script|
-          ssh.exec! script, "run_post_installation_scripts"
+        (configuration_for_app.fetch("scripts")&.fetch("after_install") | []).each do |script|
+          ssh.exec! script, "run_after_install_scripts"
         end
       end
 
