@@ -1,0 +1,13 @@
+# SSH into your server and paste the script
+sudo bash
+echo "dokku dokku/vhost_enable boolean true" | sudo debconf-set-selections
+wget https://dokku.com/install/v0.30.7/bootstrap.sh && sudo DOKKU_TAG=v0.30.7 bash bootstrap.sh
+cat /home/app/.ssh/authorized_keys | dokku ssh-keys:add admin
+dokku plugin:install https://github.com/dokku/dokku-cron-restart.git cron-restart
+dokku plugin:install https://github.com/dokku/dokku-maintenance.git maintenance
+dokku plugin:install https://github.com/dokku/dokku-redis.git redis
+dokku plugin:install https://github.com/dokku/dokku-memcached.git memcached
+dokku plugin:install https://github.com/dokku/dokku-letsencrypt.git letsencrypt
+dokku config:set --global DOKKU_LETSENCRYPT_EMAIL=sysadmin@echodek.co
+dokku git:set --global deploy-branch main
+exit
