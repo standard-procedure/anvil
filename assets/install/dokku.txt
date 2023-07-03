@@ -1,3 +1,7 @@
+# After cloudinit, the following needs to be run to install dokku:
+# Add this in as `anvil dokku install /path/to/config`
+# and make it read the plugins from the config file
+
 # SSH into your server and paste the script
 sudo bash
 echo "dokku dokku/vhost_enable boolean true" | sudo debconf-set-selections
@@ -11,3 +15,25 @@ dokku plugin:install https://github.com/dokku/dokku-letsencrypt.git letsencrypt
 dokku config:set --global DOKKU_LETSENCRYPT_EMAIL=sysadmin@echodek.co
 dokku git:set --global deploy-branch main
 exit
+
+# Then use `anvil app install` to set up the dokku app on the server
+# SWITCH ALL CHECKS OFF
+# Need to add the following to the app install setup
+
+dokku resource:limit --memory 2048m app
+dokku checks:disable app worker
+dokku checks:disable app web
+# Also change the nginx options so it's just load_balancer: true/false use that to figure out whether to install let's encrypt or not
+
+# Next up `anvil app deploy` which will check if a remote exists for each host, if not it will add them.
+# Then it pushes the current branch to main for each host.
+# Once complete it runs the post deploy scripts and scales the app (set these per host?)
+dokku ps:scale app web=2 worker=1
+# and installs the let's encrypt certificate and cron-job if required
+# Finally it switches checks back on
+dokku checks:disable app web
+
+# Other commands: anvil app update which updates the configuration and scaling for the app
+
+
+

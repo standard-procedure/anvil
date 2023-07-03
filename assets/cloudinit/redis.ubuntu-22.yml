@@ -10,13 +10,13 @@ packages:
   - fail2ban
   - ufw
   - wget
-  - redis-server
   - logrotate
 package_update: true
 package_upgrade: true
 runcmd:
   # General server setup
   - timedatectl set-timezone UTC
+  - echo "${USER}:${USER}" | chpasswd
   # Fail2Ban setup
   - printf "[sshd]\nenabled = true\nbanaction = iptables-multiport" > /etc/fail2ban/jail.local
   - systemctl enable fail2ban
@@ -34,6 +34,7 @@ runcmd:
   - sed -i -e '/^\(#\|\)AuthorizedKeysFile/s/^.*$/AuthorizedKeysFile .ssh\/authorized_keys/' /etc/ssh/sshd_config
   - sed -i '$a AllowUsers %{USER}' /etc/ssh/sshd_config
   # Set up Redis
+  - apt-get -y install redis-server
   - sed -i 's/supervised no/supervised systemd/g' /etc/redis/redis.conf
   - sed -i 's/bind 127.0.0.1 ::1/# bind 127.0.0.1 ::1/g' /etc/redis/redis.conf
   - sed -i 's/protected-mode yes/protected-mode no/g' /etc/redis/redis.conf

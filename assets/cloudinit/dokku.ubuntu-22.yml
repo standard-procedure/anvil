@@ -16,6 +16,7 @@ package_upgrade: true
 runcmd:
   # General server setup
   - timedatectl set-timezone UTC
+  - echo "${USER}:${USER}" | chpasswd
   # Fail2Ban setup
   - printf "[sshd]\nenabled = true\nbanaction = iptables-multiport" > /etc/fail2ban/jail.local
   - systemctl enable fail2ban

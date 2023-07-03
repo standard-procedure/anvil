@@ -10,14 +10,13 @@ packages:
   - fail2ban
   - ufw
   - wget
-  - docker.io
-  - docker-compose
   - apt-transport-https
 package_update: true
 package_upgrade: true
 runcmd:
   # General server setup
   - timedatectl set-timezone UTC
+  - echo "${USER}:${USER}" | chpasswd
   # Prepare for OpenSearch
   - swapoff -a
   - echo "vm.max_map_count=262144" > /etc/sysctl.d/98-opensearch.conf
@@ -39,6 +38,14 @@ runcmd:
   - sed -i -e '/^\(#\|\)AllowAgentForwarding/s/^.*$/AllowAgentForwarding no/' /etc/ssh/sshd_config
   - sed -i -e '/^\(#\|\)AuthorizedKeysFile/s/^.*$/AuthorizedKeysFile .ssh\/authorized_keys/' /etc/ssh/sshd_config
   - sed -i '$a AllowUsers %{USER}' /etc/ssh/sshd_config
+  # Install docker
+  - apt-get install -y ca-certificates curl gnupg
+  - install -m 0755 -d /etc/apt/keyrings
+  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+  - chmod a+r /etc/apt/keyrings/docker.gpg
+  - echo "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+  - apt-get update
+  - apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
   # OpenSearch setup
   - mkdir -p /etc/opensearch
   - docker pull opensearchproject/opensearch:latest
@@ -55,7 +62,7 @@ runcmd:
           - node.name=search_db
           - bootstrap.memory_lock=true
           - plugins.security.disabled=true
-          - "OPENSEARCH_JAVA_OPTS=-Xms4096m -Xmx4096m"
+          - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx3184m"
         ulimits:
           memlock:
             soft: -1
@@ -71,16 +78,18 @@ runcmd:
     volumes:
       opensearch_data:
     EOF
+  - cd /etc/opensearch && docker compose build
   - |
     cat >> /etc/systemd/system/opensearch.service << EOF
+    [Unit]
     Description=OpenSearch container
     Requires=docker.service
     After=docker.service
     [Service]
     WorkingDirectory=/etc/opensearch
     Restart=always
-    ExecStart=/usr/bin/docker-compose up
-    ExecStop=/usr/bin/docker-compose down
+    ExecStart=/usr/bin/docker compose up
+    ExecStop=/usr/bin/docker compose down
     [Install]
     WantedBy=multi-user.target
     EOF
