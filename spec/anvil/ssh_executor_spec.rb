@@ -7,7 +7,7 @@ RSpec.describe Anvil::SshExecutor do
   let(:ssh_connection) { double "net/ssh" }
 
   before do
-    expect(Net::SSH).to receive(:start).with("server1.example.com", "user", use_agent: true).and_return(ssh_connection)
+    expect(Net::SSH).to receive(:start).with("server1.example.com", "user", use_agent: true, verify_host_key: :accept_new).and_return(ssh_connection)
   end
 
   it "creates an SSH connection and yields to the caller" do
