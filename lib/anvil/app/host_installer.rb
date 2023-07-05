@@ -25,7 +25,7 @@ module Anvil
 
       def install_plugins ssh
         (configuration_for_app.fetch("plugins") | []).each do |plugin|
-          ssh.exec! "dokku plugin:install https://github.com/dokku/dokku-#{plugin}.git #{plugin}"
+          ssh.exec! "sudo dokku plugin:install https://github.com/dokku/dokku-#{plugin}.git #{plugin}"
         end
       end
 
@@ -52,10 +52,10 @@ module Anvil
       end
 
       def run_after_install_scripts ssh
-        (configuration_for(host).fetch("scripts")&.fetch("after_install") || []).each do |script|
+        (configuration_for(host).dig("scripts")&.dig("after_install") || []).each do |script|
           ssh.exec! script, "run_after_install_scripts"
         end
-        (configuration_for_app.fetch("scripts")&.fetch("after_install") | []).each do |script|
+        (configuration_for_app.dig("scripts")&.dig("after_install") | []).each do |script|
           ssh.exec! script, "run_after_install_scripts"
         end
       end
