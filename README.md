@@ -12,123 +12,91 @@ gem install standard-procedure-anvil
 
 ### To build a new server
 
-Coming soon (plan is to use [Fog](https://github.com/fog/fog) to handle building servers)
+Ultimately the plan is to use [Fog](https://github.com/fog/fog) to handle building servers.
 
-### To install an application onto a blank server
+But until then, you can prepare your servers using [CloudInit](https://cloudinit.readthedocs.io/en/latest/)
 
-Move to your application's root folder and create the anvil.yml file (see below).
+A cloudinit file is a YML file that you load into a virtual machine while it is being created.  As the server boots, uses the cloudinit configuration to install software and set itself up.  With most cloud hosting providers, you will find an option for "user data", or something similar, on the "create a new server" page.
 
-Then run `anvil host --user=user --use-sudo --identity=~/.ssh/my_key`.
+So firstly we ask Anvil which cloudinit configurations it has available:
 
-This will SSH into each server and:
+```sh
+anvil cloudinit list
+```
 
-- Sets the server hostname and timezone
-- Installs various necessary packages, plus dokku itself
-- Sets up the firewall
-- Creates unix users for each app, adding them to the sudo and docker groups, and setting their authorized_keys files with the given public key
-- Schedule a `docker system prune` once per week to clean up any dangling images or containers
-- Configure nginx
-- Install dokku plugins and run any configuration you have defined
-- Sets the dokku deployment branch to `main`
-- Disallows root and passwordless logins over SSH
+This will give us a list of prewritten cloud init scripts - of which dokku is probably the one we're most interested in.
 
-For each app it will then:
+Next we tell anvil to generate our configuration:
 
-- Create the dokku app
-- Set the environment variables to those defined in your configuration and secrets files
-- Set the app's domain and set up a proxy from nginx to the app's port
-- Sets resource limits for the app
-- Disables checks for workers
+```sh
+anvil cloudinit generate dokku --user app --public-key ~/.ssh/my_key.pub > ~/Desktop/my_server.yml
+```
 
-Then a git remote for each app is created on your local machine and then pushed.  This performs the initial dokku deployment. Once complete:
+Anvil generates a dokku configuration (and places it on our desktop) that will create an Ubuntu 22.04 box with docker and dokku preinstalled.  Plus it will create a user called `app` that can log in through SSH using a public key `my_key.pub`.  The server itself is locked down so only ports 80, 443 and 22 are open, only the users `app` and `dokku` are allowed to log in and they must use public/private key encryption - no passwords allowed.
 
-- The app is scaled to the correct number of workers
-- Plugins are configured for the app
+To test this, it's worth taking a look at [Multipass](https://multipass.run) - a tool from Canonical that lets you create virtual machines (using cloud init files) on your local machine - meaning you can try out various configurations without spending money at a hosting company.
+
+Once you've built a preconfigured virtual machine, we can move on to getting our dokku application installed.
+
+### Installing an application onto the server
+
+Move to your application's root folder and create the deploy.yml file (see below).  Then use the `app install` command to set dokku up for your first deployment.
+
+```sh
+anvil app install
+```
+
+This will SSH into the server (or servers if you have multiple) from your config file and:
+
+- Installs any dokku plugins that you have specified
+- Tells dokku to create the app
+- Uses your config file to set the environment variables for the app
+- Sets some sensible defaults for Nginx and makes sure it proxies correctly to your app
+- Optionally forwards the correct SSL/TLS headers if your app is behind a load-balancer
+- Finally it runs the post-installation scripts from your config file, which you can use to configure your plugins
+
+Next up we deploy the app.
+
+```sh
+anvil app deploy
+```
+As this is the first deployment, anvil will create git remotes for each host, then do the initial git push.  If you have multiple servers configured, these should run in parallel (coming soon).  Once each deployment has completed, anvil will SSH in, scale your app and run the post-first-deployment scripts.
+
+You can then use the same `anvil app deploy` command to deploy the app again - but as it knows this isn't the first deployment (as it does not need to create the git remotes), it will run your post-deployment scripts (not post-first-deployment) each time.
+
+Finally, if you need to change the values of any environment variables, update your config file and use:
+
+
+```sh
+anvil app deploy
+```
 
 ### Configuration Files
 
 An Anvil configuration file specifies the configuration for multiple servers and multiple apps.  Each server is configured, then each app is installed onto each server.
 
-So you could have one app on two servers (and, we assume, a load-balancer set up in front of them).  Or two apps on one server.  Or even two apps on two servers (again, using a load-balancer)
+For now take a look at the two samples in the spec folder - [multi-server](/spec/fixtures/multi-server.config.yml) and [single-server](/spec/fixtures/single-server.config.yml).
 
+### Secrets
 
-```yml
-version: 0.1
-servers:
-  hosts:
-    - server1.example.com
-  user: user
-  public_key: /home/local-user/.ssh/my-key.pub
-  timezone: Europe/London
-  ports:
-    - 22/tcp
-    - 80/tcp
-    - 443/tcp
-  nginx:
-    forward_proxy_headers: false
-    client_max_body_size: 512m
-    proxy_read_timeout: 60s
-  plugins:
-    cron-restart:
-      url: https://github.com/dokku/dokku-cron-restart.git
-    maintenance:
-      url: https://github.com/dokku/dokku-maintenance.git
-    redis:
-      url: https://github.com/dokku/dokku-redis.git
-    memcached:
-      url: https://github.com/dokku/dokku-memcached.git
-    letsencrypt:
-      url: https://github.com/dokku/dokku-letsencrypt.git
-      config:
-        - set --global email ssl-admin@mycompany.com
-        - cronjob --add
-apps:
-  first_app:
-    hostname: first_app.example.com
-    port: 3000
-    environment:
-      - ENV_VAR=value
-      - ENV_VAR2=value2
-      - RAILS_ENV=production
-    secrets: secrets.yml
-    resource_limit: 2048m
-    scale: web=2 worker=1
-    plugins:
-        cron-restart:
-          - set first_app schedule '0 3 * * *'
-        redis:
-          - create first_app_redis_db
-          - link first_app_redis_db first_app
-        memcached:
-          - create first_app_memcached
-          - link first_app_memcached first_app
-        letsencrypt:
-          - set first_app email ssl-admin@mycompany.com
-          - enable first_app
-  second_app:
-    hostname: second_app.example.com
-    port: 3000
-    environment:
-      - ENV_VAR=value
-      - ENV_VAR2=value2
-      - RAILS_ENV=production
-    secrets: secrets.yml
-    resource_limit: 2048m
-    scale: web=2 worker=1
-    plugins:
-        cron-restart:
-          - set second_app schedule '0 3 * * *'
-        letsencrypt:
-          - set second_app email ssl-admin@mycompany.com
-          - enable second_app
-```
-`secrets.yml` is an optional additional file containing environment variables that you do not want to check into your source code repository.  It is a simple KEY=VALUE format:
+Finally, you'll probably want to check your deploy.yml file into source control.  But you _definitely_ don't want to be storing important secrets - database passwords, encryption keys and so on - where everyone can see them.
+
+So the `anvil app` commands also allow you to specify secrets, either from another file, or via the command line.
+
+The secrets are just extra environment variables that are added to the ones defined in your config file - in the format:
 
 ```
-DB_PASSWORD=letmein
-ENCRYPTION_KEY=secretstuff
+SECRET1=VALUE1 SECRET2=VALUE2
 ```
 
+You can either specify `--secrets my-secrets-file.env` to load these from a separate file.  Or you can load them from stdin.
+
+For example, I use [Bitwarden](https://bitwarden.com) as my password locker and use the Bitwarden CLI to access my secrets.  The CLI is installed through homebrew, I then authenticate and can use a command like:
+
+```sh
+bw get notes secrets@myapp.com | anvil app install deploy.myapp.yml -S
+```
+I have the environment variables for myapp.com stored in Bitwarden as a secure note with the title "secrets@myapp.com".  So `bw get notes secrets@myapp.com` loads them from my vault and pipes them to the `anvil app install` command.  The anvil command is using the `-S` (or `--secrets-stdin`) option which means it will read the information piped in by bitwarden.  So, once decrypted, the confidential data never touches a disk until it gets written into the dokku app configuration on the server.
 
 ## Contributing
 
