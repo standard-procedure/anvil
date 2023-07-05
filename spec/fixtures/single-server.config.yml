@@ -9,7 +9,7 @@ app:
     - ENV_VAR=value
     - ENV_VAR2=value2
     - RAILS_ENV=production
-  resource_limit: 2048m
+  resource_limit: 2048m # not yet working
   scale: web=2 worker=1
   load_balancer: false
   nginx:
@@ -30,11 +30,10 @@ app:
       - dokku redis:create redis_db
       - dokku redis:link redis_db app
       - dokku mysql:create mysql_db
+      - dokku config:set app MYSQL_DATABASE_SCHEME=mysql2 # Need this so Rails understands the MySQL connection URL
       - dokku mysql:link mysql_db app
     after_first_deploy:
       - dokku letsencrypt:set app email baz@collabor8online.co.uk
       - dokku letsencrypt:enable app
       - dokku letsencrypt:cron-job --add
-      - dokku run app bin/rails db:create
-      - dokku run app bin/rails db:migrate
       - dokku run app bin/rails db:seed
