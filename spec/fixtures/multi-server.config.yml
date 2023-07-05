@@ -7,8 +7,7 @@ hosts:
       scripts:
         after_install:
         after_first_deploy:
-          - dokku run app bin/rails db:create
-          - dokku run app bin/rails db:migrate
+          - dokku run app bin/rails db:migrate # Only want the primary server to run migrations, so we take it out of app.json
           - dokku run app bin/rails db:seed
         after_deploy:
           - dokku run app bin/rails db:migrate
@@ -16,10 +15,6 @@ hosts:
       user: app_user
       environment:
         - PRIMARY=false
-      scripts:
-        after_install:
-        after_first_deploy:
-        after_deploy:
 app:
   domain: app.example.com
   port: 3000
@@ -27,7 +22,7 @@ app:
     - ENV_VAR=value
     - ENV_VAR2=value2
     - RAILS_ENV=production
-  resource_limit: 2048m
+  resource_limit: 2048m # Not yet working
   scale: web=2 worker=1
   load_balancer: true
   nginx:
