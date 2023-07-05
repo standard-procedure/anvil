@@ -7,6 +7,7 @@ module Anvil
   class App < Anvil::SubCommandBase
     require_relative "app/env"
     require_relative "app/install"
+    require_relative "app/deploy"
 
     desc "env /path/to/config.yml", "Generate environment variables for an app"
     long_desc <<-DESC
@@ -47,6 +48,23 @@ module Anvil
       configuration = YAML.load_file(filename)
       secrets = read_secrets filename: options[:secrets], stdin: options[:secrets_stdin]
       Anvil::App::Install.new(configuration, secrets).call
+    end
+
+    desc "deploy /path/to/config.yml", "Deploy an app"
+    long_desc <<-DESC
+    Deploy an app on the hosts specified in the configuration.
+
+    First it checks to see if a git remote exists for each host.
+
+    If not, this counts as a first deployment and it creates the git remote
+
+    Then, whether first deployment or not, it does a `git push` of the current branch to main on the remote.
+
+    Finally, if this is the first deployment, it runs the "after_first_deployment" scripts, otherwise it runs the "after_deployment" scripts.
+    DESC
+    def deploy filename = "deploy.yml"
+      configuration = YAML.load_file(filename)
+      Anvil::App::Deploy.new(configuration).call
     end
 
     protected
