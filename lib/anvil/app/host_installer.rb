@@ -13,6 +13,7 @@ module Anvil
 
       def call
         Anvil::SshExecutor.new(host, user_for(host), logger).call do |ssh|
+          install_plugins ssh
           create_app ssh
           set_environment ssh
           set_dokku_options ssh
@@ -21,6 +22,12 @@ module Anvil
       end
 
       protected
+
+      def install_plugins ssh
+        (configuration_for_app.fetch("plugins") | []).each do |plugin|
+          ssh.exec! "dokku plugin:install https://github.com/dokku/dokku-#{plugin}.git #{plugin}"
+        end
+      end
 
       def create_app ssh
         ssh.exec! "dokku apps:create app", "create_app"
