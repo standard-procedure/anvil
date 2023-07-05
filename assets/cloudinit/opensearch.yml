@@ -82,7 +82,7 @@ runcmd:
   - |
     cat >> /etc/systemd/system/opensearch.service << EOF
     [Unit]
-    Description=OpenSearch container
+    Description=OpenSearch
     Requires=docker.service
     After=docker.service
     [Service]

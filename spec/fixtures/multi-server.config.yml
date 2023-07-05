@@ -5,10 +5,20 @@ hosts:
       environment:
         - PRIMARY=true
       scripts:
-        post_deploy:
+        after_install:
+        after_first_deploy:
+          - dokku run app bin/rails db:migrate
+          - dokku run app bin/rails db:seed
+        after_deploy:
           - dokku run app bin/rails db:migrate
   - server2.example.com:
       user: app_user
+      environment:
+        - PRIMARY=false
+      scripts:
+        after_install:
+        after_first_deploy:
+        after_deploy:
 app:
   domain: app.example.com
   port: 3000
@@ -16,15 +26,19 @@ app:
     - ENV_VAR=value
     - ENV_VAR2=value2
     - RAILS_ENV=production
-  secrets: spec/fixtures/secrets.yml
   resource_limit: 2048m
   scale: web=2 worker=1
+  load_balancer: true
   nginx:
-    forward_proxy_headers: true
     client_max_body_size: 512m
     proxy_read_timeout: 60s
   scripts:
     post_install:
       - dokku cron-restart:set app schedule '0 3 * * *'
-      - dokku letsencrypt:set app email ssl-admin@mycompany.com
-      - dokku letsencrypt:enable app
+  scripts:
+    after_install:
+      - dokku cron-restart:set app schedule '0 3 * * *'
+    after_first_deploy:
+      - dokku run app bin/rails searches:index
+      - dokku run app bin/rails searches:index_activities
+    after_deploy:

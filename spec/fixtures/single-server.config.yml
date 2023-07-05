@@ -2,9 +2,6 @@ version: 0.1
 hosts:
   - server1.example.com:
       user: app_user
-      scripts:
-        post_deploy:
-          - dokku run app bin/rails db:migrate
 app:
   domain: my_app.example.com
   port: 3000
@@ -14,12 +11,17 @@ app:
     - RAILS_ENV=production
   resource_limit: 2048m
   scale: web=2 worker=1
+  load_balancer: false
   nginx:
-    forward_proxy_headers: false
     client_max_body_size: 512m
     proxy_read_timeout: 60s
   scripts:
-    post_install:
+    after_install:
       - dokku cron-restart:set app schedule '0 3 * * *'
-      - dokku letsencrypt:set app email ssl-admin@mycompany.com
-      - dokku letsencrypt:enable app
+    after_first_deploy:
+      - dokku run app bin/rails db:migrate
+      - dokku run app bin/rails db:seed
+      - dokku run app bin/rails searches:index
+      - dokku run app bin/rails searches:index_activities
+    after_deploy:
+      - dokku run app bin/rails db:migrate

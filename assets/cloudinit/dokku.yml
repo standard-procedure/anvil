@@ -11,36 +11,29 @@ packages:
   - ufw
   - wget
   - apt-transport-https
-  - mysql-client
-  - libmysqlclient-dev
+  - ca-certificates
+  - curl
+  - gpg-agent
+  - software-properties-common
 package_update: true
 package_upgrade: true
 runcmd:
   # General server setup
   - timedatectl set-timezone UTC
   - echo "${USER}:${USER}" | chpasswd
-  # Install MySQL
-  - echo "mysql-server mysql-server/root_password password root" | sudo debconf-set-selections
-  - echo "mysql-server mysql-server/root_password_again password root" | sudo debconf-set-selections
-  - sudo apt-get -y install mysql-server
-  - |
-    cat >> /etc/mysql/mysql.conf.d/utf8.cnf << CONF
-    [client]
-    default-character-set=utf8mb4
-
-    [mysql]
-    default-character-set=utf8mb4
-
-    [mysqld]
-    init_connect='SET collation_connection = utf8mb4_unicode_ci'
-    init_connect='SET NAMES utf8mb4'
-    character-set-server=utf8mb4
-    collation-server=utf8mb4_unicode_ci
-    skip-character-set-client-handshake
-    CONF
-  - sed -i -e '/^\(#\|\)bind-address/s/^.*$/bind-address = 0.0.0.0/' /etc/mysql/mysql.conf.d/mysqld.cnf
-  # Start MySQL
-  - systemctl start mysql.service
+  # Prepare for Docker
+  - sudo install -m 0755 -d /etc/apt/keyrings
+  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+  - sudo chmod a+r /etc/apt/keyrings/docker.gpg
+  - echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+  # Install docker
+  - apt-get update
+  - apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+  # Install dokku
+  - echo "dokku dokku/vhost_enable boolean true" | sudo debconf-set-selections
+  - wget https://dokku.com/install/v0.30.7/bootstrap.sh && sudo DOKKU_TAG=v0.30.7 bash bootstrap.sh
+  - cat /home/app/.ssh/authorized_keys | dokku ssh-keys:add admin
+  - dokku git:set --global deploy-branch main
   # Fail2Ban setup
   - printf "[sshd]\nenabled = true\nbanaction = iptables-multiport" > /etc/fail2ban/jail.local
   - systemctl enable fail2ban
@@ -60,3 +53,4 @@ runcmd:
   - sed -i '$a AllowUsers %{USER} dokku' /etc/ssh/sshd_config
   # And we're done
   - reboot
+
