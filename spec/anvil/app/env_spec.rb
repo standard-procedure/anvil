@@ -41,7 +41,7 @@ RSpec.describe Anvil::App::Env do
     it "generates environment variables including values for the second server" do
       subject = Anvil::App::Env.new(configuration, "server2.example.com", secrets)
 
-      expect(subject.call).to eq "ENV_VAR=value ENV_VAR2=value2 RAILS_ENV=production FIRST_API_KEY=999999ABCDEF SECOND_API_KEY=ABCDEF999999"
+      expect(subject.call).to eq "PRIMARY=false ENV_VAR=value ENV_VAR2=value2 RAILS_ENV=production FIRST_API_KEY=999999ABCDEF SECOND_API_KEY=ABCDEF999999"
     end
   end
 end

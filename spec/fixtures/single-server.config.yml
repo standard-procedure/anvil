@@ -15,13 +15,26 @@ app:
   nginx:
     client_max_body_size: 512m
     proxy_read_timeout: 60s
+  plugins:
+    - cron-restart
+    - maintenance
+    - redis
+    - memcached
+    - mysql
+    - letsencrypt
   scripts:
     after_install:
       - dokku cron-restart:set app schedule '0 3 * * *'
+      - dokku memcached:create memcached
+      - dokku memcached:link memcached app
+      - dokku redis:create redis_db
+      - dokku redis:link redis_db app
+      - dokku mysql:create mysql_db
+      - dokku mysql:link mysql_db app
     after_first_deploy:
+      - dokku letsencrypt:set app email baz@collabor8online.co.uk
+      - dokku letsencrypt:enable app
+      - dokku letsencrypt:cron-job --add
+      - dokku run app bin/rails db:create
       - dokku run app bin/rails db:migrate
       - dokku run app bin/rails db:seed
-      - dokku run app bin/rails searches:index
-      - dokku run app bin/rails searches:index_activities
-    after_deploy:
-      - dokku run app bin/rails db:migrate

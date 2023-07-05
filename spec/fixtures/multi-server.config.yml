@@ -7,6 +7,7 @@ hosts:
       scripts:
         after_install:
         after_first_deploy:
+          - dokku run app bin/rails db:create
           - dokku run app bin/rails db:migrate
           - dokku run app bin/rails db:seed
         after_deploy:
@@ -32,13 +33,9 @@ app:
   nginx:
     client_max_body_size: 512m
     proxy_read_timeout: 60s
-  scripts:
-    post_install:
-      - dokku cron-restart:set app schedule '0 3 * * *'
+  plugins:
+    - cron-restart
+    - maintenance
   scripts:
     after_install:
       - dokku cron-restart:set app schedule '0 3 * * *'
-    after_first_deploy:
-      - dokku run app bin/rails searches:index
-      - dokku run app bin/rails searches:index_activities
-    after_deploy:
