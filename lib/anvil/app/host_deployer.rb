@@ -4,7 +4,6 @@ require "standard_procedure/async"
 module Anvil
   require_relative "../logger"
   require_relative "../ssh_executor"
-  require_relative "env"
   require_relative "../configuration_reader"
   class App
     class HostDeployer < Struct.new(:configuration, :host, :branch)
@@ -67,10 +66,7 @@ module Anvil
       end
 
       def scale_processes
-        scale = configuration_for_app.dig("scale") || "web=1"
-        Anvil::SshExecutor.new(host, user_for(host), logger).call do |ssh|
-          ssh.exec! "dokku ps:scale app #{scale}"
-        end
+        Anvil::App::HostScaler.new(configuration, host).call
       end
 
       def run_after_deployment_scripts

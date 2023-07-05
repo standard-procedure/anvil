@@ -64,11 +64,17 @@ As this is the first deployment, anvil will create git remotes for each host, th
 
 You can then use the same `anvil app deploy` command to deploy the app again - but as it knows this isn't the first deployment (as it does not need to create the git remotes), it will run your post-deployment scripts (not post-first-deployment) each time.
 
-Finally, if you need to change the values of any environment variables, update your config file and use:
-
+To change the number of processes (as defined by your Procfile), you can set the `scale` key(s) in your config file and then call:
 
 ```sh
-anvil app deploy
+anvil app scale
+```
+
+(COMING SOON)
+Finally, if you need to change the values of any environment variables, update your config file and use:
+
+```sh
+anvil app configure
 ```
 
 ### Configuration Files

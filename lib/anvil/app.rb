@@ -8,6 +8,7 @@ module Anvil
     require_relative "app/env"
     require_relative "app/install"
     require_relative "app/deploy"
+    require_relative "app/scale"
 
     desc "env /path/to/config.yml", "Generate environment variables for an app"
     long_desc <<-DESC
@@ -65,6 +66,17 @@ module Anvil
     def deploy filename = "deploy.yml"
       configuration = YAML.load_file(filename)
       Anvil::App::Deploy.new(configuration).call
+    end
+
+    desc "scale /path/to/config.yml", "Scale an app"
+    long_desc <<-DESC
+    Scale a previously deployed app, using the scale values from the config file.
+
+    The scale can either be set per host or per app (with host settings taking priority).
+    DESC
+    def scale filename = "deploy.yml"
+      configuration = YAML.load_file(filename)
+      Anvil::App::Scale.new(configuration).call
     end
 
     protected
