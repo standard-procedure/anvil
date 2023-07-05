@@ -55,13 +55,13 @@ module Anvil
         (configuration_for(host).dig("scripts")&.dig("after_install") || []).each do |script|
           ssh.exec! script, "run_after_install_scripts"
         end
-        (configuration_for_app.dig("scripts")&.dig("after_install") | []).each do |script|
+        (configuration_for_app.dig("scripts")&.dig("after_install") || []).each do |script|
           ssh.exec! script, "run_after_install_scripts"
         end
       end
 
       def logger
-        @logger ||= Anvil::Logger.new("HostInstaller - #{host}")
+        @logger ||= Anvil::Logger.new(host)
       end
     end
   end

@@ -22,9 +22,11 @@ module Anvil
         if first_deployment
           switch_on_downtime_checks
           run_after_first_deployment_scripts
+          scale_processes
         else
           run_after_deployment_scripts
         end
+        logger.info "Deployment for #{host} complete"
       end
 
       protected
@@ -40,11 +42,11 @@ module Anvil
       end
 
       def create_git_remote
-        logger.info `git remote add #{host} dokku@#{host}:/app`, host
+        logger.info `git remote add #{host} dokku@#{host}:/app`
       end
 
       def do_git_push
-        logger.info `git push #{host} #{branch}:main`, host
+        logger.info `git push #{host} #{branch}:main`
       end
 
       def switch_on_downtime_checks
@@ -58,9 +60,16 @@ module Anvil
           (configuration_for(host).dig("scripts")&.dig("after_first_deploy") || []).each do |script|
             ssh.exec! script, "run_after_install_scripts"
           end
-          (configuration_for_app.dig("scripts")&.dig("after_first_deploy") | []).each do |script|
+          (configuration_for_app.dig("scripts")&.dig("after_first_deploy") || []).each do |script|
             ssh.exec! script, "run_after_install_scripts"
           end
+        end
+      end
+
+      def scale_processes
+        scale = configuration_for_app.dig("scale") || "web=1"
+        Anvil::SshExecutor.new(host, user_for(host), logger).call do |ssh|
+          ssh.exec! "dokku ps:scale app #{scale}"
         end
       end
 
@@ -69,14 +78,14 @@ module Anvil
           (configuration_for(host).dig("scripts")&.dig("after_deploy") || []).each do |script|
             ssh.exec! script, "run_after_install_scripts"
           end
-          (configuration_for_app.dig("scripts")&.dig("after_deploy") | []).each do |script|
+          (configuration_for_app.dig("scripts")&.dig("after_deploy") || []).each do |script|
             ssh.exec! script, "run_after_install_scripts"
           end
         end
       end
 
       def logger
-        @logger ||= Anvil::Logger.new("HostDeployer - #{host}")
+        @logger ||= Anvil::Logger.new(host)
       end
     end
   end
