@@ -41,6 +41,7 @@ module Anvil
         ssh.exec! "dokku docker-options:add app run \"--add-host=host.docker.internal:host-gateway\"", "set_dokku_options"
         ssh.exec! "dokku domains:set app #{configuration_for_app["domain"]}", "set_dokku_options"
         ssh.exec! "dokku proxy:ports-add app http:80:#{configuration_for_app["port"]}", "set_dokku_options"
+        ssh.exec! "dokku proxy:ports-add app https:443:#{configuration_for_app["port"]}", "set_dokku_options"
         ssh.exec! "dokku nginx:set app client-max-body-size #{configuration_for_app["nginx"]["client_max_body_size"]}", "set_dokku_options"
         ssh.exec! "dokku nginx:set app proxy-read-timeout #{configuration_for_app["nginx"]["proxy_read_timeout"]}", "set_dokku_options"
         if configuration_for_app["load_balancer"]
