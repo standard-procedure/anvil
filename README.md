@@ -32,6 +32,10 @@ Use the `anvil app install` and `anvil app deploy` commands to [install and depl
 
 Use `anvil app scale` and `anvil app reconfigure` to manage and reconfigure your app.  (Docs coming soon)
 
+### Ruby on Rails
+
+I'm a Rails developer and I built anvil to help me with my Rails apps.  Here are [some things I learnt along the way](/docs/ruby-on-rails.md).
+
 ## Contributing
 
 Check out the [Roadmap](/docs/roadmap.md)
