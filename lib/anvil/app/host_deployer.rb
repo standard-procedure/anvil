@@ -41,10 +41,12 @@ module Anvil
       end
 
       def create_git_remote
+        logger.info "git remote add #{host} dokku@#{host}:/app"
         logger.info `git remote add #{host} dokku@#{host}:/app`
       end
 
       def do_git_push
+        logger.info "git push #{host} #{branch}:main"
         logger.info `git push #{host} #{branch}:main`
       end
 
