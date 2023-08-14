@@ -34,11 +34,14 @@ runcmd:
   - sed -i -e '/^\(#\|\)AuthorizedKeysFile/s/^.*$/AuthorizedKeysFile .ssh\/authorized_keys/' /etc/ssh/sshd_config
   - sed -i '$a AllowUsers %{USER}' /etc/ssh/sshd_config
   # Set up Redis
+  - curl -fsSL https://packages.redis.io/gpg | gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg
+  - echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/redis.list
+  - apt-get update
   - apt-get -y install redis-server
   - sed -i 's/supervised no/supervised systemd/g' /etc/redis/redis.conf
   - sed -i 's/bind 127.0.0.1 ::1/# bind 127.0.0.1 ::1/g' /etc/redis/redis.conf
   - sed -i 's/protected-mode yes/protected-mode no/g' /etc/redis/redis.conf
-  - systemctl restart redis.service
+  - systemctl restart redis-server.service
   - |
     cat > /etc/logrotate.d/redis-server << EOF
     /var/log/redis/redis-server*.log {
