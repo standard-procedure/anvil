@@ -14,6 +14,8 @@ module Anvil
     long_desc <<-DESC
     List the environment variables for an app (on a given host)
 
+    Normally you never need call this command directly as it is called by the install command.
+
     Example:
       anvil app env /path/to/config
 
@@ -42,6 +44,10 @@ module Anvil
       If the /path/to/config is not supplied, it defaults to deploy.yml
 
       If --secrets-stdin is specified then additional environment variable values will be read from STDIN, if --secrets=/path/to/secrets is specified then they will be read from the file specified.  This is so you can specify environment variables that you do not want stored in source control.  These should be formatted as "VAR=value VAR2=value2" etc.
+
+      password-manager read my-secrets | anvil app install /path/to/config --secrets-stdin
+
+      Alternatively you can specify secrets as a separate file using the --secrets option.  Again, this should be formatted as "VAR=value VAR2=value2".
     DESC
     option :secrets, type: :string, default: nil, aliases: "-s"
     option :secrets_stdin, type: :boolean, default: false, aliases: "-S"
@@ -84,7 +90,7 @@ module Anvil
     def read_secrets(filename: nil, stdin: false)
       return nil if filename.nil? && !stdin
       return $stdin.read if stdin
-      return File.read(filename) if File.exist?(filename)
+      File.read(filename) if File.exist?(filename)
     end
   end
 end

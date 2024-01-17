@@ -24,7 +24,7 @@ module Anvil
       protected
 
       def install_plugins ssh
-        (configuration_for_app.fetch("plugins") | []).each do |plugin|
+        (configuration_for_app.dig("plugins") || []).each do |plugin|
           ssh.exec! "sudo dokku plugin:install https://github.com/dokku/dokku-#{plugin}.git #{plugin}"
         end
       end
@@ -40,8 +40,9 @@ module Anvil
       def set_dokku_options ssh
         ssh.exec! "dokku docker-options:add app run \"--add-host=host.docker.internal:host-gateway\"", "set_dokku_options"
         ssh.exec! "dokku domains:set app #{configuration_for_app["domain"]}", "set_dokku_options"
-        ssh.exec! "dokku proxy:ports-add app http:80:#{configuration_for_app["port"]}", "set_dokku_options"
-        ssh.exec! "dokku proxy:ports-add app https:443:#{configuration_for_app["port"]}", "set_dokku_options"
+        ssh.exec! "dokku proxy:set app nginx", "set_dokku_options"
+        ssh.exec! "dokku ports:add app http:80:#{configuration_for_app["port"]}", "set_dokku_options"
+        ssh.exec! "dokku ports:add app https:443:#{configuration_for_app["port"]}", "set_dokku_options"
         ssh.exec! "dokku nginx:set app client-max-body-size #{configuration_for_app["nginx"]["client_max_body_size"]}", "set_dokku_options"
         ssh.exec! "dokku nginx:set app proxy-read-timeout #{configuration_for_app["nginx"]["proxy_read_timeout"]}", "set_dokku_options"
         if configuration_for_app["load_balancer"]

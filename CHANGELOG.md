@@ -17,3 +17,9 @@ Successfully deployed a number of apps into production using this
 ## [0.2.2] - 2023-08-14
 
 - Updated the redis cloudinit file to use the latest version from Redis, instead of the older one that is included with Ubuntu.
+
+## [0.2.3] - 2024-01-17
+
+- Updaetd the dokku cloudinit file to install dokku and docker from the official repositories
+- Added support for %{HOSTNAME} in cloudinit files
+- Improved reliability when reading configuration files

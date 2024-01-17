@@ -18,14 +18,15 @@ module Anvil
     Generate a cloudinit configuration for a server
 
     Example:
-      anvil cloudinit generate mysql.ubuntu-22 --user dbuser --public_key ~/.ssh/my_key.pub
+      anvil cloudinit generate mysql.ubuntu-22 --user dbuser --public_key ~/.ssh/my_key.pub --hostname myserver.com
 
     DESC
     option :user, type: :string, default: "app", aliases: "-u"
     option :public_key, type: :string, default: "~/.ssh/id_rsa.pub", aliases: "-k"
+    option :hostname, type: :string, default: "example.com", aliases: "-h"
     def generate configuration
       filename = File.dirname(__FILE__) + "/../../assets/cloudinit/#{configuration}.yml"
-      Anvil::Cloudinit::Generator.new(filename, options[:user], options[:public_key]).call
+      Anvil::Cloudinit::Generator.new(filename, options[:user], options[:public_key], options[:hostname]).call
     end
   end
 end
