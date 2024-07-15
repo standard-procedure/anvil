@@ -44,6 +44,8 @@ module Anvil
         ssh.exec! "dokku ports:add app http:80:#{configuration_for_app["port"]}", "set_dokku_options"
         ssh.exec! "dokku ports:add app https:443:#{configuration_for_app["port"]}", "set_dokku_options"
         ssh.exec! "dokku nginx:set app client-max-body-size #{configuration_for_app["nginx"]["client_max_body_size"]}", "set_dokku_options"
+        resource_limit = configuration_for_app["resource_limit"].blank? ? "1024m" : configuration_for_app["resource_limit"]
+        ssh.exec! "dokku resource:limit --memory #{resource_limit} app"
         ssh.exec! "dokku nginx:set app proxy-read-timeout #{configuration_for_app["nginx"]["proxy_read_timeout"]}", "set_dokku_options"
         if configuration_for_app["load_balancer"]
           ssh.exec! "dokku nginx:set app x-forwarded-for-value '$http_x_forwarded_for'", "set_dokku_options"
