@@ -23,3 +23,7 @@ Successfully deployed a number of apps into production using this
 - Updaetd the dokku cloudinit file to install dokku and docker from the official repositories
 - Added support for %{HOSTNAME} in cloudinit files
 - Improved reliability when reading configuration files
+
+## [0.2.4] - 2024-07-15
+
+- Set the RAM resource limit when installing an app
